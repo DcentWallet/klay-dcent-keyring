@@ -57,13 +57,37 @@ class DcentKeyring extends EventEmitter {
   // tx is an instance of the ethereumjs-transaction class.
   signTransaction (tx) {
       return new Promise((resolve, reject) => {
-        this._klaytnSignTransaction(tx)
+        this._signTransaction(tx)
         .then(signedTx => {
           resolve(signedTx)
         }).catch(e => {
           reject(new Error(e && e.toString() || 'Unknown error'))
         })
       })
+  }
+
+  feePayerSignTransaction (tx, feePayer) {
+    if (!tx.feePayer || tx.feePayer === '0x') {
+      tx.feePayer = feePayer
+    }
+    if (!tx.senderRawTransaction) {
+      if (!tx.type || !tx.type.includes('FEE_DELEGATED')) {
+          return Promise.reject(new Error(`Failed to sign transaction with fee payer: invalid transaction type(${tx.type ? tx.type : 'LEGACY'})`))
+      }
+    }
+
+    if (tx.senderRawTransaction) {
+      return new Promise((resolve, reject) => {
+        this._signTransaction(tx)
+        .then(signedTx => {
+          resolve(signedTx)
+        }).catch(e => {
+          reject(new Error(e && e.toString() || 'Unknown error'))
+        })
+      })
+    }
+
+    return Promise.reject(new Error('Not supported on this device'))
   }
 
   signMessage (withAccount, data) {
@@ -89,6 +113,7 @@ class DcentKeyring extends EventEmitter {
   }
 
   /* PRIVATE METHODS */
+
   _getAccountsFromDevice () {
     return new Promise((resolve, reject) => {
       // TODO: [For multi accounts] get account info from device and retrieve accounts using coinType
@@ -118,31 +143,32 @@ class DcentKeyring extends EventEmitter {
    })
   }
 
-  _klaytnSignTransaction (tx) {
-      const txType = this._getKlaytnTxType(tx.type)
-      const contract = tx.contract || null
+  //
+  _signTransaction (tx) {  
+    const txObj = CaverUtil.generateTxObject(tx)
+    const txType = this._getKlaytnTxType(txObj.type)
 
-      tx.feeRatio = tx.feeRatio || null
-      tx.data = tx.data || '0x'
-      return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         DcentWebConnector.getKlaytnSignedTransaction(
         this.coinType,
-        tx.nonce,
-        tx.gasPrice,
-        tx.gas,
-        tx.to,
-        tx.value,
-        tx.data,
+        txObj.nonce,
+        txObj.gasPrice,
+        txObj.gas,
+        txObj.to,
+        txObj.value,
+        txObj.data,
         this.path, // key path
-        tx.chainId,
+        txObj.chainId,
         txType, // klaytn tx type
-        tx.from, // from
-        tx.feeRatio,
-        contract
+        txObj.from, // from
+        txObj.feeRatio,
+        txObj.contract
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
 
-          const result = CaverUtil.getTransactionResult(tx, response.body.parameter.sign_v, response.body.parameter.sign_r, response.body.parameter.sign_s)
+          const sigs = txObj.ref.isFeePayer ? txObj.ref.existedFeePayerSignatures : txObj.ref.existedSenderSignatures
+          sigs.push([response.body.parameter.sign_v, response.body.parameter.sign_r, response.body.parameter.sign_s])
+          const result = CaverUtil.getTransactionResult(txObj.ref.isFeePayer, txObj.ref.transaction, txObj.ref.rlpEncoded, sigs)
           // /////////
           resolve(result)
         } else {
@@ -154,6 +180,7 @@ class DcentKeyring extends EventEmitter {
         }
         DcentWebConnector.popupWindowClose()
       }).catch(e => {
+        console.log(e)
         if (e.body.error) {
           reject(e.body.error.code + ' - ' + e.body.error.message)
         } else {
@@ -162,12 +189,13 @@ class DcentKeyring extends EventEmitter {
         DcentWebConnector.popupWindowClose()
       })
     })
+
   }
 
   _getKlaytnTxType (txType) {
     switch (txType) {
       case 'LEGACY':
-        return DcentWebConnector.klaytnTxType.LEGACY
+        return {}
       case 'FEE_PAYER':
         return DcentWebConnector.klaytnTxType.FEE_PAYER
       case 'VALUE_TRANSFER':

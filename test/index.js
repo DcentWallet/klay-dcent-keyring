@@ -11,7 +11,7 @@ const DcentWebConnector = require('dcent-web-connector')
 const DcentKeyring = require('../')
 const fakeAddress = '0xF30952A1c534CDE7bC471380065726fa8686dfB3'
 const fakeTx = {
-    nonce: '0x00',
+    nonce: '0x03',
     gasPrice: '0x09184e72a000',
     gas: '0x2710',
     to: '0x0000000000000000000000000000000000000000',
@@ -19,6 +19,13 @@ const fakeTx = {
     data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
     chainId: 1001,
     from: '0xF30952A1c534CDE7bC471380065726fa8686dfB3',
+}
+const feePayerAddress = '0xae61ba3f5f43c9d4943b09a3733edb572f7bf161'
+const fakeFeePayerTx = {
+    senderRawTransaction: '0x09f8878000832dc6c094ae61ba3f5f43c9d4943b09a3733edb572f7bf161872386f26fc1000094ae61ba3f5f43c9d4943b09a3733edb572f7bf161f847f8458207f6a0dd6bb2403631f05861efbb291e8c1974db90e617a930227d29a2b005ec897693a057ba0469ac6f8c49ac2df16b17857fd936d18754645dea3063a0c32d445eec5380c4c3018080',
+	feePayer: '0xae61ba3f5f43c9d4943b09a3733edb572f7bf161',
+	gasPrice: '0x5d21dba00',
+	chainId: 1001,
 }
 
 chai.use(spies)
@@ -145,6 +152,21 @@ describe('DcentKeyring', function () {
             chai.spy.on(DcentWebConnector, 'getKlaytnSignedTransaction')
 
             keyring.signTransaction(fakeTx).catch(e => {
+            //     // we expect this to be rejected because
+            //     // we are trying to open a popup from node
+                 expect(DcentWebConnector.getKlaytnSignedTransaction).to.have.been.called()
+                 done()
+            })
+            // done()
+        })
+    })
+
+    describe('feePayerSignTransaction', async function () {
+        it('should call DcentWebConnector.getKlaytnSignedTransaction', function (done) {
+
+           // chai.spy.on(DcentWebConnector, 'getKlaytnSignedTransaction')
+
+            keyring.feePayerSignTransaction(fakeFeePayerTx, feePayerAddress).catch(e => {
             //     // we expect this to be rejected because
             //     // we are trying to open a popup from node
                  expect(DcentWebConnector.getKlaytnSignedTransaction).to.have.been.called()
