@@ -146,8 +146,7 @@ class DcentKeyring extends EventEmitter {
   //
   _signTransaction (tx) {  
     const txObj = CaverUtil.generateTxObject(tx)
-    const txType = this._getKlaytnTxType(txObj.type)
-
+    const txType = txObj.ref.isFeePayer ? DcentWebConnector.klaytnTxType.FEE_PAYER : this._getKlaytnTxType(txObj.type)
     return new Promise((resolve, reject) => {
         DcentWebConnector.getKlaytnSignedTransaction(
         this.coinType,
@@ -165,7 +164,6 @@ class DcentKeyring extends EventEmitter {
         txObj.contract
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
-
           const sigs = txObj.ref.isFeePayer ? txObj.ref.existedFeePayerSignatures : txObj.ref.existedSenderSignatures
           sigs.push([response.body.parameter.sign_v, response.body.parameter.sign_r, response.body.parameter.sign_s])
           const result = CaverUtil.getTransactionResult(txObj.ref.isFeePayer, txObj.ref.transaction, txObj.ref.rlpEncoded, sigs)
@@ -178,24 +176,30 @@ class DcentKeyring extends EventEmitter {
             reject('Unknown error - ' + response)
           }
         }
-        DcentWebConnector.popupWindowClose()
+        setTimeout(() => {
+          DcentWebConnector.popupWindowClose()
+        }, 100)
       }).catch(e => {
-        console.log(e)
         if (e.body.error) {
           reject(e.body.error.code + ' - ' + e.body.error.message)
         } else {
           reject('Unknown error - ' + e)
         }
-        DcentWebConnector.popupWindowClose()
+        setTimeout(() => {
+          DcentWebConnector.popupWindowClose()
+        }, 100)
       })
     })
 
   }
 
   _getKlaytnTxType (txType) {
+    if (txType === undefined) {
+      return DcentWebConnector.klaytnTxType.LEGACY
+    }
     switch (txType) {
       case 'LEGACY':
-        return {}
+        return DcentWebConnector.klaytnTxType.LEGACY
       case 'FEE_PAYER':
         return DcentWebConnector.klaytnTxType.FEE_PAYER
       case 'VALUE_TRANSFER':
@@ -222,6 +226,8 @@ class DcentKeyring extends EventEmitter {
         return DcentWebConnector.klaytnTxType.FEE_DELEGATED_CANCEL
       case 'FEE_DELEGATED_CANCEL_WITH_RATIO':
         return DcentWebConnector.klaytnTxType.FEE_DELEGATED_CANCEL_WITH_RATIO
+      default :
+        throw new Error('This device is not support the tx type - ' + txType)
     }
   }
 

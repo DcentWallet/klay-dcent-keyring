@@ -1,5 +1,22 @@
 const utils = require('caver-js/packages/caver-utils')
+
+const helpers = require('caver-js/packages/caver-core-helpers')
 const Hash = require('eth-lib/lib/hash')
+const RLP = require('eth-lib/lib/rlp')
+const Bytes = require('eth-lib/lib/bytes')
+
+const {
+    FEE_DELEGATED_VALUE_TRANSFER_TYPE_TAG,
+    FEE_DELEGATED_VALUE_TRANSFER_MEMO_TYPE_TAG,
+    FEE_DELEGATED_VALUE_TRANSFER_MEMO_WITH_RATIO_TYPE_TAG,
+    FEE_DELEGATED_VALUE_TRANSFER_WITH_RATIO_TYPE_TAG,
+
+    FEE_DELEGATED_SMART_CONTRACT_EXECUTION_TYPE_TAG,
+    FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO_TYPE_TAG,
+
+    FEE_DELEGATED_CANCEL_TYPE_TAG, 
+    FEE_DELEGATED_CANCEL_WITH_RATIO_TYPE_TAG,
+} = helpers.constants
 
 const {
     encodeRLPByTxType,
@@ -8,6 +25,9 @@ const {
     splitFeePayer,
 } = require('caver-js/packages/caver-klay/caver-klay-accounts/src/makeRawTransaction')
 
+function inputCallFormatter (tx) {
+    return helpers.formatters.inputCallFormatter(tx)
+}
 
 function coverInitialTxValue (tx) {
     if (typeof tx !== 'object') throw new Error('Invalid transaction')
@@ -65,6 +85,99 @@ function decodeRawTransaction (transaction) {
     }
 }
 
+
+function getRlpData (type, values) {
+
+    switch (type) {
+         case 'FEE_DELEGATED_VALUE_TRANSFER':
+            return RLP.encode([
+                FEE_DELEGATED_VALUE_TRANSFER_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.to.toLowerCase(),
+                Bytes.fromNat(values.value),
+                values.from.toLowerCase(),
+            ])
+        case 'FEE_DELEGATED_VALUE_TRANSFER_WITH_RATIO':
+            return RLP.encode([
+                    FEE_DELEGATED_VALUE_TRANSFER_WITH_RATIO_TYPE_TAG,
+                    Bytes.fromNat(values.nonce),
+                    Bytes.fromNat(values.gasPrice),
+                    Bytes.fromNat(values.gas),
+                    values.to.toLowerCase(),
+                    Bytes.fromNat(values.value),
+                    values.from.toLowerCase(),
+                    values.feeRatio,
+                ])
+        case 'FEE_DELEGATED_VALUE_TRANSFER_MEMO':
+            return RLP.encode([
+                    FEE_DELEGATED_VALUE_TRANSFER_MEMO_TYPE_TAG,
+                    Bytes.fromNat(values.nonce),
+                    Bytes.fromNat(values.gasPrice),
+                    Bytes.fromNat(values.gas),
+                    values.to.toLowerCase(),
+                    Bytes.fromNat(values.value),
+                    values.from.toLowerCase(),
+                    values.data,
+                ])
+        case 'FEE_DELEGATED_VALUE_TRANSFER_MEMO_WITH_RATIO':
+            return RLP.encode([
+                FEE_DELEGATED_VALUE_TRANSFER_MEMO_WITH_RATIO_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.to.toLowerCase(),
+                Bytes.fromNat(values.value),
+                values.from.toLowerCase(),
+                values.data,
+                Bytes.fromNat(values.feeRatio),
+            ])              
+        case 'FEE_DELEGATED_SMART_CONTRACT_EXECUTION':
+            return RLP.encode([
+                FEE_DELEGATED_SMART_CONTRACT_EXECUTION_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.to.toLowerCase(),
+                Bytes.fromNat(values.value),
+                values.from.toLowerCase(),
+                values.data,
+            ])  
+        case 'FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO':
+            return RLP.encode([
+                FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.to.toLowerCase(),
+                Bytes.fromNat(values.value),
+                values.from.toLowerCase(),
+                values.data,
+                Bytes.fromNat(values.feeRatio),
+            ])  
+        case 'FEE_DELEGATED_CANCEL' :
+            return RLP.encode([
+                FEE_DELEGATED_CANCEL_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.from.toLowerCase(),
+            ])
+        case 'FEE_DELEGATED_CANCEL_WITH_RATIO':
+            return RLP.encode([
+                FEE_DELEGATED_CANCEL_WITH_RATIO_TYPE_TAG,
+                Bytes.fromNat(values.nonce),
+                Bytes.fromNat(values.gasPrice),
+                Bytes.fromNat(values.gas),
+                values.from.toLowerCase(),
+                Bytes.fromNat(values.feeRatio),
+            ])     
+        default:
+            return {}
+    }
+}
+
 function generateTxObject (tx) {
     let isLegacy = false
     let isFeePayer = false
@@ -78,7 +191,7 @@ function generateTxObject (tx) {
         try {
             // Decode senderRawTransaction to get signatures of fee payer
             const { senderRawTransaction, feePayer, feePayerSignatures } = splitFeePayer(tx.senderRawTransaction)
-
+            console.log('feePayerSignatures - ', feePayerSignatures)
             // feePayer !== '0x' means that in senderRawTransaction there are feePayerSignatures
             if (feePayer !== '0x') {
                 // The feePayer inside the tx object does not match the feePayer information contained in the senderRawTransaction.
@@ -104,29 +217,31 @@ function generateTxObject (tx) {
           existedSenderSignatures = existedSenderSignatures.concat(tx.signatures)
       }
     }
-
-    console.log('tx - ', tx)
+    
+    tx = inputCallFormatter(tx)
     const transaction = coverInitialTxValue(tx)
     const rlpEncoded = encodeRLPByTxType(transaction)
-
-    const txObj = tx
+    const txObj = Object.assign({}, tx)
     const decoded = decodeRawTransaction(tx)
-    console.log('tx - ', tx)
-    console.log('decoded - ', tx)
-    txObj.nonce = tx.nonce || decoded.nonce
-    console.log('txObj.nonce - ', txObj.nonce)
+    let rlpData
+    if (isFeePayer) {
+        rlpData = getRlpData(tx.type, decoded)
+    } else {
+        rlpData = tx.data
+    }
+    console.log('decoded = ', decoded)
+    txObj.nonce = tx.nonce || '0'
     txObj.nonce = (txObj.nonce === '0x') ? '0x0' : txObj.nonce
     txObj.gasPrice = tx.gasPrice || decoded.gasPrice || '0x00'
     txObj.gas = tx.gas || decoded.gas || '0x00'
-    txObj.to = tx.to || decoded.to
-    txObj.value = tx.value || decoded.value || '0x00'
-    txObj.from = tx.from || decoded.from
-    txObj.data = tx.data || decoded.data || '0x'
-    txObj.feeRatio = tx.feeRatio || decoded.feeRatio || null
+    txObj.to = tx.to || ''
+    txObj.value = tx.value || '0x00'
+    txObj.from = isFeePayer ? tx.feePayer : tx.from
+    txObj.data = rlpData || '0x'
+    txObj.feeRatio = utils.hexToNumber(tx.feeRatio) || utils.hexToNumber(decoded.feeRatio) || null
     txObj.contract = tx.contract || null
     txObj.chainId = utils.hexToNumber(tx.chainId)
     //
-    console.log('txObj - ', txObj)
     txObj.ref = { isFeePayer, transaction, rlpEncoded, existedFeePayerSignatures, existedSenderSignatures }
     return txObj
 }
@@ -135,8 +250,8 @@ function generateTxObject (tx) {
 function getTransactionResult (isFeePayer, transaction, rlpEncoded, sigs) {
 
     const { rawTransaction, signatures, feePayerSignatures } = makeRawTransaction(rlpEncoded, sigs, transaction)
-
     const result = {
+        // messageHash: Hash.keccak256(rlpEncoded),
         v: sigs[0][0],
         r: sigs[0][1],
         s: sigs[0][2],
