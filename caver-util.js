@@ -191,7 +191,6 @@ function generateTxObject (tx) {
         try {
             // Decode senderRawTransaction to get signatures of fee payer
             const { senderRawTransaction, feePayer, feePayerSignatures } = splitFeePayer(tx.senderRawTransaction)
-            console.log('feePayerSignatures - ', feePayerSignatures)
             // feePayer !== '0x' means that in senderRawTransaction there are feePayerSignatures
             if (feePayer !== '0x') {
                 // The feePayer inside the tx object does not match the feePayer information contained in the senderRawTransaction.
@@ -229,7 +228,6 @@ function generateTxObject (tx) {
     } else {
         rlpData = tx.data
     }
-    console.log('decoded = ', decoded)
     txObj.nonce = tx.nonce || '0'
     txObj.nonce = (txObj.nonce === '0x') ? '0x0' : txObj.nonce
     txObj.gasPrice = tx.gasPrice || decoded.gasPrice || '0x00'
