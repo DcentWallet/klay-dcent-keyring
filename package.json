@@ -1,0 +1,43 @@
+{
+  "name": "klay-dcent-keyring",
+  "version": "0.1.0-beta",
+  "description": "A Kaikas compatible keyring, for D'CENT biometric hardware wallets",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "lint": "./node_modules/.bin/eslint . --ext .js",
+    "lint:fix": "./node_modules/.bin/eslint --fix . --ext .js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DcentWallet/klay-dcent-keyring.git"
+  },
+  "keywords": [
+    "klaytn",
+    "keyring",
+    "kaikas",
+    "dcent",
+    "dcentwallet"
+  ],
+  "author": "IoTrust Co. Ltd.,",
+  "license": "MIT",
+  "homepage": "https://github.com/DcentWallet/klay-dcent-keyring#readme",
+  "dependencies": {
+    "caver-js": "^1.4.1",
+    "dcent-web-connector": "^0.7.2-beta",
+    "events": "^1.1.1"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "babel-eslint": "^8.0.0",
+    "babel-runtime": "^6.26.0",
+    "chai": "^4.1.2",
+    "chai-spies": "^1.0.0",
+    "eslint": "^5.0.0",
+    "eslint-plugin-chai": "0.0.1",
+    "eslint-plugin-json": "^1.2.0",
+    "eslint-plugin-mocha": "^5.0.0",
+    "eslint-plugin-react": "^7.20.0",
+    "mocha": "^5.0.4"
+  }
+}
