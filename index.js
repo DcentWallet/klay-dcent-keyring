@@ -99,7 +99,7 @@ class DcentKeyring extends EventEmitter {
       throw new Error(`Address ${withAccount} not found in this keyring`)
     }
 
-    return new Promise((resolve, reject) => {      
+    return new Promise((resolve, reject) => {
       this._signMessage(withAccount, message)
       .then(sign => {
         resolve(sign)
@@ -130,7 +130,7 @@ class DcentKeyring extends EventEmitter {
       // Get Address using coinType and path
       DcentWebConnector.getAddress(
         this.coinType,
-        this.path
+        this.path,
       ).then(response => {
         if (response.header.status === DcentResult.SUCCESS) {
           resolve(response.body.parameter.address) // return address of first account
@@ -156,10 +156,10 @@ class DcentKeyring extends EventEmitter {
   //
   _signMessage (withAccount, message) {
     return new Promise((resolve, reject) => {
-      DcentWebConnector.getSignedMessage (
+      DcentWebConnector.getSignedMessage(
         this.coinType,
         this.path,
-        message
+        message,
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
           const address = response.body.parameter.address
@@ -188,7 +188,7 @@ class DcentKeyring extends EventEmitter {
     })
   }
   //
-  _signTransaction (tx) {  
+  _signTransaction (tx) {
     const txObj = CaverUtil.generateTxObject(tx)
     const txType = txObj.ref.isFeePayer ? DcentWebConnector.klaytnTxType.FEE_PAYER : this._getKlaytnTxType(txObj.type)
     return new Promise((resolve, reject) => {
@@ -205,7 +205,7 @@ class DcentKeyring extends EventEmitter {
         txType, // klaytn tx type
         txObj.from, // from
         txObj.feeRatio,
-        txObj.contract
+        txObj.contract,
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
           const sigs = txObj.ref.isFeePayer ? txObj.ref.existedFeePayerSignatures : txObj.ref.existedSenderSignatures

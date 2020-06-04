@@ -14,7 +14,7 @@ const {
     FEE_DELEGATED_SMART_CONTRACT_EXECUTION_TYPE_TAG,
     FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO_TYPE_TAG,
 
-    FEE_DELEGATED_CANCEL_TYPE_TAG, 
+    FEE_DELEGATED_CANCEL_TYPE_TAG,
     FEE_DELEGATED_CANCEL_WITH_RATIO_TYPE_TAG,
 } = helpers.constants
 
@@ -132,7 +132,7 @@ function getRlpData (type, values) {
                 values.from.toLowerCase(),
                 values.data,
                 Bytes.fromNat(values.feeRatio),
-            ])              
+            ])
         case 'FEE_DELEGATED_SMART_CONTRACT_EXECUTION':
             return RLP.encode([
                 FEE_DELEGATED_SMART_CONTRACT_EXECUTION_TYPE_TAG,
@@ -143,7 +143,7 @@ function getRlpData (type, values) {
                 Bytes.fromNat(values.value),
                 values.from.toLowerCase(),
                 values.data,
-            ])  
+            ])
         case 'FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO':
             return RLP.encode([
                 FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO_TYPE_TAG,
@@ -155,7 +155,7 @@ function getRlpData (type, values) {
                 values.from.toLowerCase(),
                 values.data,
                 Bytes.fromNat(values.feeRatio),
-            ])  
+            ])
         case 'FEE_DELEGATED_CANCEL' :
             return RLP.encode([
                 FEE_DELEGATED_CANCEL_TYPE_TAG,
@@ -172,7 +172,7 @@ function getRlpData (type, values) {
                 Bytes.fromNat(values.gas),
                 values.from.toLowerCase(),
                 Bytes.fromNat(values.feeRatio),
-            ])     
+            ])
         default:
             return {}
     }
@@ -216,7 +216,7 @@ function generateTxObject (tx) {
           existedSenderSignatures = existedSenderSignatures.concat(tx.signatures)
       }
     }
-    
+
     tx = inputCallFormatter(tx)
     const transaction = coverInitialTxValue(tx)
     const rlpEncoded = encodeRLPByTxType(transaction)
@@ -255,7 +255,7 @@ function getTransactionResult (isFeePayer, transaction, rlpEncoded, sigs) {
         s: sigs[0][2],
         rawTransaction,
         txHash: Hash.keccak256(rawTransaction),
-        senderTxHash: getSenderTxHash(rawTransaction),       
+        senderTxHash: getSenderTxHash(rawTransaction),
     }
 
     if (isFeePayer) {

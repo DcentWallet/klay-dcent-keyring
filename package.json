@@ -4,7 +4,7 @@
   "description": "A Kaikas compatible keyring, for D'CENT biometric hardware wallets",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "npm run lint && mocha",
     "lint": "./node_modules/.bin/eslint . --ext .js",
     "lint:fix": "./node_modules/.bin/eslint --fix . --ext .js"
   },
