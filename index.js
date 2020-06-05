@@ -95,8 +95,18 @@ class DcentKeyring extends EventEmitter {
   }
 
   signPersonalMessage (withAccount, message) {
-    // Waiting on dcent to enable this
-    return Promise.reject(new Error('Not supported on this device'))
+    if (!this.accounts.map(a => a.toLowerCase()).includes(withAccount.toLowerCase())) {
+      throw new Error(`Address ${withAccount} not found in this keyring`)
+    }
+
+    return new Promise((resolve, reject) => {
+      this._signMessage(withAccount, message)
+      .then(sign => {
+        resolve(sign)
+      }).catch(e => {
+        reject(new Error(e && e.toString() || 'Unknown error'))
+      })
+    })
   }
 
   signTypedData (withAccount, typedData) {
@@ -120,7 +130,7 @@ class DcentKeyring extends EventEmitter {
       // Get Address using coinType and path
       DcentWebConnector.getAddress(
         this.coinType,
-        this.path
+        this.path,
       ).then(response => {
         if (response.header.status === DcentResult.SUCCESS) {
           resolve(response.body.parameter.address) // return address of first account
@@ -144,7 +154,41 @@ class DcentKeyring extends EventEmitter {
   }
 
   //
-  _signTransaction (tx) {  
+  _signMessage (withAccount, message) {
+    return new Promise((resolve, reject) => {
+      DcentWebConnector.getSignedMessage(
+        this.coinType,
+        this.path,
+        message,
+      ).then((response) => {
+        if (response.header.status === DcentResult.SUCCESS) {
+          const address = response.body.parameter.address
+          if (withAccount !== address) {
+            reject(`Address ${withAccount} not found in this Device`)
+          }
+          const sign = response.body.parameter.sign
+          // /////////
+          resolve(sign)
+        } else {
+          if (response.body.error) {
+            reject(response.body.error.code + ' - ' + response.body.error.message)
+          } else {
+            reject('Unknown error - ' + response)
+          }
+        }
+        DcentWebConnector.popupWindowClose()
+      }).catch(e => {
+        if (e.body.error) {
+          reject(e.body.error.code + ' - ' + e.body.error.message)
+        } else {
+          reject('Unknown error - ' + e)
+        }
+        DcentWebConnector.popupWindowClose()
+      })
+    })
+  }
+  //
+  _signTransaction (tx) {
     const txObj = CaverUtil.generateTxObject(tx)
     const txType = txObj.ref.isFeePayer ? DcentWebConnector.klaytnTxType.FEE_PAYER : this._getKlaytnTxType(txObj.type)
     return new Promise((resolve, reject) => {
@@ -161,7 +205,7 @@ class DcentKeyring extends EventEmitter {
         txType, // klaytn tx type
         txObj.from, // from
         txObj.feeRatio,
-        txObj.contract
+        txObj.contract,
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
           const sigs = txObj.ref.isFeePayer ? txObj.ref.existedFeePayerSignatures : txObj.ref.existedSenderSignatures
