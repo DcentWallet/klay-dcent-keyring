@@ -176,32 +176,35 @@ describe('DcentKeyring', function () {
         })
     })
 
-    describe('signMessage', function () {
-        it('should throw an error because it is not supported', async function () {
-          let error = null
-          try {
-              await keyring.signMessage()
-          } catch (e) {
-              error = e
-          }
-
-          expect(error instanceof Error, true)
-          expect(error.toString(), 'Not supported on this device')
+    describe('signMessage, signPersonalMessage', async function () {
+        beforeEach(async function () {
+            keyring.deserialize({
+              accounts: [fakeAddress],
+            })
         })
-    })
 
-    describe('signPersonalMessage', function () {
-        it('should throw an error because it is not supported', async function () {
-          let error = null
-          try {
-              await keyring.signPersonalMessage()
-          } catch (e) {
-              error = e
-          }
+        it('signMessage : should call DcentWebConnector.getSignedMessage', function (done) {
 
-          expect(error instanceof Error, true)
-          expect(error.toString(), 'Not supported on this device')
-      })
+          chai.spy.on(DcentWebConnector, 'getSignedMessage')
+          const message = '0xaabbccddeeffaabbccddeeff'
+          keyring.signMessage(fakeAddress, message).catch(e => {
+            //     // we expect this to be rejected because
+            //     // we are trying to open a popup from node
+                 expect(DcentWebConnector.getSignedMessage).to.have.been.called()
+                 done()
+            })
+        })
+
+        it('signPersonalMessage : should call DcentWebConnector.getSignedMessage', function (done) {
+
+            const message = 'This is a message!!'
+            keyring.signMessage(fakeAddress, message).catch(e => {
+              //     // we expect this to be rejected because
+              //     // we are trying to open a popup from node
+                   expect(DcentWebConnector.getSignedMessage).to.have.been.called()
+                   done()
+              })
+          })
     })
 
     describe('signTypedData', function () {
