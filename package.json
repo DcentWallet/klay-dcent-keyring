@@ -1,6 +1,6 @@
 {
   "name": "klay-dcent-keyring",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "A Kaikas compatible keyring, for D'CENT biometric hardware wallets",
   "main": "index.js",
   "scripts": {
