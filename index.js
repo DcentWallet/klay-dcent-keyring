@@ -163,7 +163,7 @@ class DcentKeyring extends EventEmitter {
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
           const address = response.body.parameter.address
-          if (withAccount !== address) {
+          if (withAccount.toLowerCase() !== address.toLowerCase()) {
             reject(`Address ${withAccount} not found in this Device`)
           }
           const sign = response.body.parameter.sign
