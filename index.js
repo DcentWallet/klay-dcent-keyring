@@ -270,6 +270,12 @@ class DcentKeyring extends EventEmitter {
         return DcentWebConnector.klaytnTxType.FEE_DELEGATED_CANCEL
       case 'FEE_DELEGATED_CANCEL_WITH_RATIO':
         return DcentWebConnector.klaytnTxType.FEE_DELEGATED_CANCEL_WITH_RATIO
+      case 'SMART_CONTRACT_DEPLOY':
+        return DcentWebConnector.klaytnTxType.SMART_CONTRACT_DEPLOY
+      case 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY':
+        return DcentWebConnector.klaytnTxType.FEE_DELEGATED_SMART_CONTRACT_DEPLOY
+      case 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO':
+        return DcentWebConnector.klaytnTxType.FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO
       default :
         throw new Error('This device is not support the tx type - ' + txType)
     }
