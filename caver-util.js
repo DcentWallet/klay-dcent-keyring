@@ -11,6 +11,9 @@ const {
     FEE_DELEGATED_VALUE_TRANSFER_MEMO_WITH_RATIO_TYPE_TAG,
     FEE_DELEGATED_VALUE_TRANSFER_WITH_RATIO_TYPE_TAG,
 
+    FEE_DELEGATED_SMART_CONTRACT_DEPLOY_TYPE_TAG,
+    FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO_TYPE_TAG,
+
     FEE_DELEGATED_SMART_CONTRACT_EXECUTION_TYPE_TAG,
     FEE_DELEGATED_SMART_CONTRACT_EXECUTION_WITH_RATIO_TYPE_TAG,
 
@@ -80,6 +83,14 @@ function decodeRawTransaction (transaction) {
         // eslint-disable-next-line no-unused-vars
         const [nonce, gasPrice, gas, from, feeRatio, [[v, r, s]]] = utils.rlpDecode(typeDetacehdRawTransaction)
         return { nonce, gasPrice, gas, from, feeRatio }
+    } else if (transaction.type === 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY') {
+        // eslint-disable-next-line no-unused-vars
+        const [nonce, gasPrice, gas, to, value, from, data, humanReadable, codeFormat, [[v, r, s]]] = utils.rlpDecode(typeDetacehdRawTransaction)
+        return { nonce, gasPrice, gas, to, value, from, data, humanReadable, codeFormat }
+    } else if (transaction.type === 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO') {
+        // eslint-disable-next-line no-unused-vars
+        const [nonce, gasPrice, gas, to, value, from, data, humanReadable, feeRatio, codeFormat, [[v, r, s]]] = utils.rlpDecode(typeDetacehdRawTransaction)
+        return { nonce, gasPrice, gas, to, value, from, data, humanReadable, feeRatio, codeFormat }
     } else {
         return {}
     }
@@ -173,6 +184,33 @@ function getRlpData (type, values) {
                 values.from.toLowerCase(),
                 Bytes.fromNat(values.feeRatio),
             ])
+        case 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY':
+                return RLP.encode([
+                    FEE_DELEGATED_SMART_CONTRACT_DEPLOY_TYPE_TAG,
+                    Bytes.fromNat(values.nonce),
+                    Bytes.fromNat(values.gasPrice),
+                    Bytes.fromNat(values.gas),
+                    values.to.toLowerCase(),
+                    Bytes.fromNat(values.value),
+                    values.from.toLowerCase(),
+                    values.data,
+                    values.humanReadable,
+                    values.codeFormat,
+                ])
+            case 'FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO':
+                return RLP.encode([
+                    FEE_DELEGATED_SMART_CONTRACT_DEPLOY_WITH_RATIO_TYPE_TAG,
+                    Bytes.fromNat(values.nonce),
+                    Bytes.fromNat(values.gasPrice),
+                    Bytes.fromNat(values.gas),
+                    values.to.toLowerCase(),
+                    Bytes.fromNat(values.value),
+                    values.from.toLowerCase(),
+                    values.data,
+                    values.humanReadable,
+                    Bytes.fromNat(values.feeRatio),
+                    values.codeFormat,
+                ])
         default:
             return {}
     }
