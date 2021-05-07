@@ -196,7 +196,6 @@ class DcentKeyring extends EventEmitter {
       })
    })
   }
-
   async _getAccountsFromDevice () {
     let error
     let selected = -1
