@@ -24,7 +24,7 @@
   "homepage": "https://github.com/DcentWallet/klay-dcent-keyring#readme",
   "dependencies": {
     "caver-js": "^1.5.0",
-    "dcent-web-connector": "^0.9.1",
+    "dcent-web-connector": "^0.10.4",
     "events": "^1.1.1"
   },
   "devDependencies": {

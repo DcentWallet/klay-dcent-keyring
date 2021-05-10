@@ -2,7 +2,9 @@ const { EventEmitter } = require('events')
 const DcentWebConnector = require('dcent-web-connector')
 const keyringType = 'DCENT Hardware'
 const DCENT_TIMEOUT = 60000
+const ethPathString = `m/44'/60'/0'/0/0`
 const klayPathString = `m/44'/8217'/0'/0/0`
+const pathList = [ ethPathString, klayPathString ]
 const DcentResult = require('./dcent-result')
 const CaverUtil = require('./caver-util')
 
@@ -12,7 +14,22 @@ class DcentKeyring extends EventEmitter {
     this.type = keyringType
     this.accounts = []
     this.coinType = DcentWebConnector.coinType.KLAYTN
-    this.path = klayPathString
+    this.path = null
+    this.address = null
+    try {
+      // eslint-disable-next-line no-undef
+      chrome.storage.sync.get(['_dcent_address_info'], (result) => {
+        if (result._dcent_address_info) {
+          this.path = result._dcent_address_info.path
+          this.address = result._dcent_address_info.address
+        }
+      })
+    } catch (e) {
+      if (process.env.npm_lifecycle_event === 'test') { // test case
+        this.path = klayPathString
+        this.address = '0xF30952A1c534CDE7bC471380065726fa8686dfB3'
+      }
+    }
     this.deserialize(opts)
 
     DcentWebConnector.setTimeOutMs(opts.timeOut || DCENT_TIMEOUT)
@@ -123,14 +140,13 @@ class DcentKeyring extends EventEmitter {
   }
 
   /* PRIVATE METHODS */
-
-  _getAccountsFromDevice () {
+  async _getAddress (path) {
     return new Promise((resolve, reject) => {
       // TODO: [For multi accounts] get account info from device and retrieve accounts using coinType
       // Get Address using coinType and path
       DcentWebConnector.getAddress(
         this.coinType,
-        this.path,
+        path,
       ).then(response => {
         if (response.header.status === DcentResult.SUCCESS) {
           resolve(response.body.parameter.address) // return address of first account
@@ -141,24 +157,123 @@ class DcentKeyring extends EventEmitter {
             reject('Unknown error - ' + response)
           }
         }
-        DcentWebConnector.popupWindowClose()
       }).catch(e => {
         if (e.body.error) {
           reject(e.body.error.code + ' - ' + e.body.error.message)
         } else {
           reject('Unknown error - ' + e)
         }
-        DcentWebConnector.popupWindowClose()
       })
    })
   }
 
+  async _selectAddress (addresses) {
+    return new Promise((resolve, reject) => {
+      // TODO: [For multi accounts] get account info from device and retrieve accounts using coinType
+      // Get Address using coinType and path
+      DcentWebConnector.selectAddress(
+        addresses,
+      ).then(response => {
+        if (response.header.status === DcentResult.SUCCESS) {
+          const index = response.body.parameter.selected_index
+          if (addresses[index].path === response.body.parameter.selected_address.path &&
+            addresses[index].address === response.body.parameter.selected_address.address) {
+            resolve(index) // return address of first account
+          }
+        } else {
+          if (response.body.error) {
+            reject(response.body.error.code + ' - ' + response.body.error.message)
+          } else {
+            reject('Unknown error - ' + response)
+          }
+        }
+      }).catch(e => {
+        if (e.body.error) {
+          reject(e.body.error.code + ' - ' + e.body.error.message)
+        } else {
+          reject('Unknown error - ' + e)
+        }
+      })
+   })
+  }
+  async _getAccountsFromDevice () {
+    let error
+    let selected = -1
+    const addresses = []
+    try {
+      for (const path of pathList) {
+        const addr = await this._getAddress(path)
+        addresses.push({address: addr, path: path})
+      }
+      // request to select an address for connecting
+      selected = await this._selectAddress(addresses)
+    } catch (e) {
+      error = e
+    }
+    DcentWebConnector.popupWindowClose()
+
+    return new Promise((resolve, reject) => {
+      if (error) {
+        reject(error)
+      } else {
+        if (selected < 0) {
+          reject('Error - Address is not selected')
+        } else {
+          this.address = addresses[selected].address
+          this.path = addresses[selected].path
+          // eslint-disable-next-line no-undef
+          chrome.storage.sync.set({ _dcent_address_info: {
+           address: this.address,
+           path: this.path,
+          }})
+          //
+          resolve(this.address)
+        }
+      }
+   })
+  }
   //
-  _signMessage (withAccount, message) {
+  async _getPath (address) {
+    let error
+    if (!(this.path && this.address && this.address.toLowerCase() === address.toLowerCase())) {
+      // get Address and compare received address
+      try {
+        for (const path of pathList) {
+          const addr = await this._getAddress(path)
+          if (addr.toLowerCase() === address.toLowerCase()) {
+            this.path = path
+            this.address = addr
+            // eslint-disable-next-line no-undef
+            chrome.storage.sync.set({ _dcent_address_info: {
+               address: this.address,
+               path: this.path,
+            }})
+            break
+          }
+        }
+        if (!this.path) { // Fail to get path
+          throw new Error(`Address ${address} not found in this keyring`)
+        }
+      } catch (e) {
+        error = e
+      }
+    }
+    return new Promise((resolve, reject) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve(this.path)
+      }
+    })
+  }
+
+  //
+  async _signMessage (withAccount, message) {
+    const path = await this._getPath(withAccount)
     return new Promise((resolve, reject) => {
       DcentWebConnector.getSignedMessage(
         this.coinType,
-        this.path,
+        path,
         message,
       ).then((response) => {
         if (response.header.status === DcentResult.SUCCESS) {
@@ -188,7 +303,8 @@ class DcentKeyring extends EventEmitter {
     })
   }
   //
-  _signTransaction (tx) {
+  async _signTransaction (tx) {
+    const path = await this._getPath(tx.from)
     const txObj = CaverUtil.generateTxObject(tx)
     const txType = txObj.ref.isFeePayer ? DcentWebConnector.klaytnTxType.FEE_PAYER : this._getKlaytnTxType(txObj.type)
     return new Promise((resolve, reject) => {
@@ -200,7 +316,7 @@ class DcentKeyring extends EventEmitter {
         txObj.to,
         txObj.value,
         txObj.data,
-        this.path, // key path
+        path, // key path
         txObj.chainId,
         txType, // klaytn tx type
         txObj.from, // from
