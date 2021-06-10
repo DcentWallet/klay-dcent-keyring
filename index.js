@@ -304,7 +304,12 @@ class DcentKeyring extends EventEmitter {
   }
   //
   async _signTransaction (tx) {
-    const path = await this._getPath(tx.from)
+    let path 
+    if (typeof tx.feePayer !== 'undefined') {
+      path = await this._getPath(tx.feePayer) // get path from 'feePayer'
+    } else {
+      path = await this._getPath(tx.from) // get path from 'from'
+    }
     const txObj = CaverUtil.generateTxObject(tx)
     const txType = txObj.ref.isFeePayer ? DcentWebConnector.klaytnTxType.FEE_PAYER : this._getKlaytnTxType(txObj.type)
     return new Promise((resolve, reject) => {
@@ -328,6 +333,7 @@ class DcentKeyring extends EventEmitter {
           sigs.push([response.body.parameter.sign_v, response.body.parameter.sign_r, response.body.parameter.sign_s])
           const result = CaverUtil.getTransactionResult(txObj.ref.isFeePayer, txObj.ref.transaction, txObj.ref.rlpEncoded, sigs)
           // /////////
+          console.log('sign.result = ', result)
           resolve(result)
         } else {
           if (response.body.error) {

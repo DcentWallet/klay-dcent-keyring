@@ -230,7 +230,7 @@ function generateTxObject (tx) {
             // Decode senderRawTransaction to get signatures of fee payer
             const { senderRawTransaction, feePayer, feePayerSignatures } = splitFeePayer(tx.senderRawTransaction)
             // feePayer !== '0x' means that in senderRawTransaction there are feePayerSignatures
-            if (feePayer !== '0x') {
+            if (feePayer !== '0x' && feePayer !== '0x0000000000000000000000000000000000000000') {
                 // The feePayer inside the tx object does not match the feePayer information contained in the senderRawTransaction.
                 if (feePayer.toLowerCase() !== tx.feePayer.toLowerCase()) {
                   return Promise.reject(`Invalid feePayer: The fee payer(${feePayer}) included in the transaction does not match the fee payer(${tx.feePayer}) you want to sign.`)
