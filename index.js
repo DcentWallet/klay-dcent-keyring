@@ -304,7 +304,7 @@ class DcentKeyring extends EventEmitter {
   }
   //
   async _signTransaction (tx) {
-    let path 
+    let path
     if (typeof tx.feePayer !== 'undefined') {
       path = await this._getPath(tx.feePayer) // get path from 'feePayer'
     } else {
