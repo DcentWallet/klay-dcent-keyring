@@ -126,9 +126,21 @@ class DcentKeyring extends EventEmitter {
     })
   }
 
-  signTypedData (withAccount, typedData) {
-    // Waiting on dcent to enable this
-    return Promise.reject(new Error('Not supported on this device'))
+  signTypedData (withAccount, typedData, opts) {
+    if (!this.accounts.map(a => a.toLowerCase()).includes(withAccount.toLowerCase())) {
+      throw new Error(`Address ${withAccount} not found in this keyring`)
+    }
+
+    return new Promise((resolve, reject) => {
+      this._signTypedData(
+        withAccount,
+        { payload: typedData, version: opts.version }
+      ).then(sign => {
+        resolve(sign)
+      }).catch(e => {
+        reject(new Error(e && e.toString() || 'Unknown error'))
+      })
+    })
   }
 
   exportAccount (address) {
@@ -298,6 +310,41 @@ class DcentKeyring extends EventEmitter {
         } else {
           reject('Unknown error - ' + e)
         }
+        DcentWebConnector.popupWindowClose()
+      })
+    })
+  }
+  //
+  async _signTypedData (withAccount, typedObj) {
+    const path = await this._getPath(withAccount)
+    return new Promise((resolve, reject) => {
+      DcentWebConnector.getSignedData(
+        path,
+        typedObj
+      ).then((response) => {
+        if (response.header.status === DcentResult.SUCCESS) {
+          const address = response.body.parameter.address
+          if (withAccount.toLowerCase() !== address.toLowerCase()) {
+            reject(`Address ${withAccount} not found in this Device`)
+          }
+          const sign = response.body.parameter.sign
+          resolve(sign)
+        } else {
+          if (response.body.error) {
+            reject(response.body.error.code + ' - ' + response.body.error.message)
+          } else {
+            reject('Unknown error - ' + response)
+          }
+        }
+        // DcentWebConnector.popupWindowClose()
+      }).catch(e => {
+        if (e.body.error) {
+          reject(e.body.error.code + ' - ' + e.body.error.message)
+        } else {
+          reject('Unknown error - ' + e)
+        }
+        // DcentWebConnector.popupWindowClose()
+      }).finally((_) => {
         DcentWebConnector.popupWindowClose()
       })
     })
