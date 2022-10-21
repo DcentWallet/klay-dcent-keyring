@@ -380,7 +380,6 @@ class DcentKeyring extends EventEmitter {
           sigs.push([response.body.parameter.sign_v, response.body.parameter.sign_r, response.body.parameter.sign_s])
           const result = CaverUtil.getTransactionResult(txObj.ref.isFeePayer, txObj.ref.transaction, txObj.ref.rlpEncoded, sigs)
           // /////////
-          console.log('sign.result = ', result)
           resolve(result)
         } else {
           if (response.body.error) {
