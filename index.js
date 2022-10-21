@@ -126,7 +126,7 @@ class DcentKeyring extends EventEmitter {
     })
   }
 
-  signTypedData (withAccount, typedData, opts) {
+  signTypedData (withAccount, typedData, opts = {}) {
     if (!this.accounts.map(a => a.toLowerCase()).includes(withAccount.toLowerCase())) {
       throw new Error(`Address ${withAccount} not found in this keyring`)
     }
