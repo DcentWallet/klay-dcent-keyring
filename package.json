@@ -1,12 +1,12 @@
 {
   "name": "klay-dcent-keyring",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "A Kaikas compatible keyring, for D'CENT biometric hardware wallets",
   "main": "index.js",
   "scripts": {
     "test": "npm run lint && mocha",
-    "lint": "./node_modules/.bin/eslint . --ext .js",
-    "lint:fix": "./node_modules/.bin/eslint --fix . --ext .js"
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint --fix . --ext .js"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   "homepage": "https://github.com/DcentWallet/klay-dcent-keyring#readme",
   "dependencies": {
     "caver-js": "^1.6.2",
-    "dcent-web-connector": "^0.11.4",
+    "dcent-web-connector": "^0.15.0",
     "events": "^1.1.1"
   },
   "devDependencies": {
